@@ -1,0 +1,57 @@
+# Every claim datefrontier makes, each tied to the artifact that proves it.
+# Verify integrity with ./scripts/gate.sh; reproduce with ./reproduce.sh.
+
+[project]
+name = "datefrontier"
+summary = "How far ahead a model can add calendar days exactly, and what its errors reveal - that it approximates N days as whole months rather than counting days."
+language = "Python 3"
+license = "MIT"
+oracles = "ground truth is Python's datetime (date + timedelta); the model's returned date is parsed and its signed day error computed exactly. Greedy, temperature 0. No judge, no dataset."
+
+[[claim]]
+id = "pre-registered-prediction"
+statement = "The three-part prediction (accuracy falls with the day span, frontier about a week; the smaller model's frontier is shorter; errors cluster at small day offsets, the month-approximation signature) was written into the README before the full run and all three held, with the refinement that the approximately-right behaviour is a near-regime effect."
+evidence = "README pre-registered prediction; bench_results/frontier.md."
+status = "verified"
+
+[[claim]]
+id = "short-frontier"
+statement = "The exact-date frontier is short and shrinks sharply with size: the 1.5B reliably lands the exact date only to a 14-day span and the 0.5B only to 1 day. Accuracy collapses from 0.90 at 7 days to 0.03 at 365."
+evidence = "bench_results/frontier.md; tools/verify.py recomputes accuracy by span and the frontiers and asserts the collapse and the size gap."
+status = "verified"
+
+[[claim]]
+id = "approximately-right-by-month-approximation"
+statement = "In the near regime (about a week to a month) the 1.5B is approximately right when wrong: median absolute error 2-4 days and 53-81% of errors within 5 days - the fingerprint of approximating N days as whole months and missing only the month-length correction."
+evidence = "bench_results/frontier.md median and approx columns; tools/verify.py asserts the approximately-right fraction at 14 days exceeds 0.6."
+status = "verified"
+
+[[claim]]
+id = "fails-outright-far-out"
+statement = "Far out the month approximation gives way to plain failure: at 100 and 365 days the errors are tens to hundreds of days and the approximately-right fraction falls to near zero (0.03 at 365 on the 1.5B)."
+evidence = "bench_results/frontier.md; tools/verify.py asserts the approximately-right fraction at 365 days is below 0.2."
+status = "verified"
+
+[[claim]]
+id = "overshoot-bias"
+statement = "Both models overshoot: mean signed day errors are mostly positive (the 0.5B is +70 at a 30-day span) - the same runaway-overshoot direction seen when they are asked to output a fixed count of items."
+evidence = "bench_results/frontier.md mean signed column; tools/verify.py asserts a positive mean signed error at 30 days for both models."
+status = "verified"
+
+[[claim]]
+id = "cot-excluded-honestly"
+statement = "Chain-of-thought is excluded and the reason stated: the models' step-by-step date reasoning increments by months where it should increment by days and does not converge, so a CoT condition would measure that pathology rather than date arithmetic."
+evidence = "README method note; run_sweep.py docstring."
+status = "verified"
+
+[[claim]]
+id = "no-overclaim"
+statement = "Two sizes, one phrasing, greedy, n=40 per span, direct only. The day error is exact; the 5-day tolerance is reported alongside full medians and signed errors. Not a claim about larger models or tool-assisted date math. The adversarial review is in REVIEW.md."
+evidence = "README limitations + falsifiers; REVIEW.md."
+status = "verified"
+
+[[claim]]
+id = "clean-build"
+statement = "ruff-clean, mypy --strict clean, 7 pytest tests pass, sources are pure ASCII, the independent verify passes, and no private operating-environment details are present."
+evidence = "scripts/gate.sh."
+status = "verified"
